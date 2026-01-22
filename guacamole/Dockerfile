@@ -50,6 +50,9 @@ RUN mkdir -p ${GUAC_HOME}/extensions ${GUAC_HOME}/lib /data/mysql /run/mysqld /e
 # Copy rootfs (init and service scripts)
 COPY rootfs /
 
+# Ensure init and service scripts are executable
+RUN chmod +x /etc/cont-init.d/* /etc/services.d/*/run
+
 EXPOSE 8080
 
 # s6-overlay (from base) will start services

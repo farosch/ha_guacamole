@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/with-contenv sh
 export GUACAMOLE_HOME=/data/guacamole
 # Ensure Tomcat temp dirs exist
 mkdir -p /run/tomcat

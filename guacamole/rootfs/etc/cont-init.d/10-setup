@@ -1,19 +1,21 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/with-contenv sh
 # Initialize persistent dirs, database, and Guacamole config on first run
-set -euo pipefail
+set -e
 
-bashio::log.info "Preparing persistent directories"
+echo "[init] Preparing persistent directories"
 mkdir -p /data/mysql /data/guacamole/extensions /data/guacamole/lib
 chown -R mysql:mysql /data/mysql
+mkdir -p /run/mysqld
 
-DB_USER=$(bashio::config 'db_user')
-DB_PASSWORD=$(bashio::config 'db_password')
+# Read options from HA options.json
+DB_USER=$(jq -r '.db_user' /data/options.json)
+DB_PASSWORD=$(jq -r '.db_password' /data/options.json)
 DB_NAME="guacamole_db"
-ADMIN_PASSWORD=$(bashio::config 'admin_password')
+ADMIN_PASSWORD=$(jq -r '.admin_password' /data/options.json)
 
 # Copy JDBC extension jars to GUACAMOLE_HOME if missing
 if [ ! -f "/data/guacamole/extensions/guacamole-auth-jdbc-mysql-${GUAC_VERSION}.jar" ]; then
-  bashio::log.info "Installing Guacamole JDBC MySQL extension"
+  echo "[init] Installing Guacamole JDBC MySQL extension"
   cp "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/guacamole-auth-jdbc-mysql-${GUAC_VERSION}.jar" \
      "/data/guacamole/extensions/"
 fi
@@ -23,7 +25,7 @@ fi
 
 # Create default guacamole.properties if missing
 if [ ! -f "/data/guacamole/guacamole.properties" ]; then
-  bashio::log.info "Generating guacamole.properties"
+  echo "[init] Generating guacamole.properties"
   cat > /data/guacamole/guacamole.properties <<EOF
 # guacd
 guacd-hostname: 127.0.0.1
@@ -40,13 +42,13 @@ fi
 
 # Initialize MariaDB data dir if first run
 if [ ! -d "/data/mysql/mysql" ]; then
-  bashio::log.info "Initializing MariaDB data directory"
+  echo "[init] Initializing MariaDB data directory"
   mariadb-install-db --user=mysql --datadir=/data/mysql --basedir=/usr >/dev/null
   touch /data/.mysql_first_run
 fi
 
 # Start temporary MariaDB to create DB/user and load schema on first run
-bashio::log.info "Starting temporary MariaDB for initialization"
+echo "[init] Starting temporary MariaDB for initialization"
 mysqld --user=mysql --datadir=/data/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1 --skip-networking=0 &
 MYSQL_PID=$!
 
@@ -59,14 +61,14 @@ for i in $(seq 1 50); do
 done
 
 if ! mysql --protocol=tcp -h127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1; then
-  bashio::log.error "MariaDB did not start for initialization"
+  echo "[init] ERROR: MariaDB did not start for initialization" >&2
   kill ${MYSQL_PID} || true
   exit 1
 fi
 
 # If first run, create DB, user, and load schema
 if [ -f /data/.mysql_first_run ]; then
-  bashio::log.info "Creating database, user and loading Guacamole schema"
+  echo "[init] Creating database, user and loading Guacamole schema"
   mysql --protocol=tcp -h127.0.0.1 -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
@@ -82,8 +84,8 @@ SQL
   mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} < \
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/003-create-logging.sql"
   # Set admin password per add-on config on first run
-  if [ -n "${ADMIN_PASSWORD}" ]; then
-    bashio::log.info "Applying configured admin password for user 'guacadmin'"
+  if [ -n "${ADMIN_PASSWORD}" ] && [ "${ADMIN_PASSWORD}" != "null" ]; then
+    echo "[init] Applying configured admin password for user 'guacadmin'"
     mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} <<SQL
 UPDATE guacamole_user
 SET password_hash = UNHEX(SHA2(CONCAT('${ADMIN_PASSWORD}', HEX(password_salt)), 256)),
@@ -99,4 +101,4 @@ fi
 # Stop temporary MariaDB; s6 service will start it
 kill ${MYSQL_PID}
 wait ${MYSQL_PID} || true
-bashio::log.info "Initialization complete"
+echo "[init] Initialization complete"
