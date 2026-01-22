@@ -24,7 +24,7 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   ca-certificates
 
 # Download Tomcat
-RUN mkdir -p ${TOMCAT_DIR} && \
+RUN rm -rf ${TOMCAT_DIR} && \
     curl -fsSL "https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" -o /tmp/tomcat.tar.gz && \
     tar -xzf /tmp/tomcat.tar.gz -C /opt && \
     mv /opt/apache-tomcat-${TOMCAT_VERSION} ${TOMCAT_DIR} && \
