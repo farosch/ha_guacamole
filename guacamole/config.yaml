@@ -7,9 +7,6 @@ arch:
   - arm64
 startup: services
 boot: auto
-ingress: true
-ingress_port: 8080
-ingress_entry: /guacamole/
 panel_icon: mdi:remote-desktop
 map:
   - data:rw
@@ -21,6 +18,8 @@ webui: http://[HOST]:[PORT:8080]/guacamole/
 options:
   db_user: guacamole
   db_password: changeme
+  admin_password: guacadmin
 schema:
   db_user: str
   db_password: password
+  admin_password: password

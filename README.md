@@ -3,24 +3,27 @@
 This add-on runs Apache Guacamole (web UI), guacd, and an internal MariaDB database inside a single add-on container. Data is stored under `/data` and survives updates.
 
 ## Features
-- Ingress-enabled: access via Home Assistant sidebar
-- Optional direct access: exposed on host port 8080
+- Direct network access on host port 8080 (same LAN as Home Assistant)
 - Persistent data: MySQL datadir and Guacamole config under `/data`
 - First-run DB initialization and schema setup
 
 ## Options
 - `db_user` (string): Database user (default: `guacamole`)
 - `db_password` (password): Database password (default: `changeme`)
+- `admin_password` (password): Initial Guacamole admin password (default: `guacadmin`). Applied on first run.
 
 ## Installation
 1. In Home Assistant, add this repository as an Add-on repository.
 2. Open the "Guacamole" add-on and click Install.
 3. Optionally edit configuration to set `db_password`.
-4. Start the add-on and open Web UI (via Ingress).
+4. Start the add-on.
 
 ## Access
-- Ingress: open from the add-on page or the sidebar.
-- Direct: http://YOUR_HA_HOST:8080/guacamole/
+- URL: http://YOUR_HA_HOST:YOUR_PORT/guacamole/
+
+## Network Port
+- The add-on exposes container port 8080. The external host port defaults to 8080 and can be changed in the add-on's Network tab.
+- Example: leave `8080/tcp` → `8080` (default), then open http://YOUR_HA_HOST:8080/guacamole/
 
 ## Default Credentials (first run)
 - Username: `guacadmin`

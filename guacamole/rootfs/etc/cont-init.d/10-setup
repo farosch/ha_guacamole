@@ -9,6 +9,7 @@ chown -R mysql:mysql /data/mysql
 DB_USER=$(bashio::config 'db_user')
 DB_PASSWORD=$(bashio::config 'db_password')
 DB_NAME="guacamole_db"
+ADMIN_PASSWORD=$(bashio::config 'admin_password')
 
 # Copy JDBC extension jars to GUACAMOLE_HOME if missing
 if [ ! -f "/data/guacamole/extensions/guacamole-auth-jdbc-mysql-${GUAC_VERSION}.jar" ]; then
@@ -80,6 +81,18 @@ SQL
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/002-create-admin-user.sql"
   mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} < \
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/003-create-logging.sql"
+  # Set admin password per add-on config on first run
+  if [ -n "${ADMIN_PASSWORD}" ]; then
+    bashio::log.info "Applying configured admin password for user 'guacadmin'"
+    mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} <<SQL
+UPDATE guacamole_user
+SET password_hash = UNHEX(SHA2(CONCAT('${ADMIN_PASSWORD}', HEX(password_salt)), 256)),
+    password_date = NOW(),
+    expired = 0,
+    disabled = 0
+WHERE username = 'guacadmin';
+SQL
+  fi
   rm -f /data/.mysql_first_run
 fi
 
