@@ -1,2 +1,4 @@
 #!/usr/bin/with-contenv sh
+mkdir -p /run/mysqld
+chown -R mysql:mysql /run/mysqld
 exec mysqld --user=mysql --datadir=/data/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1
