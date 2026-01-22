@@ -17,6 +17,10 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   apk add --no-cache \
   openjdk17-jre-headless \
   guacamole-server \
+  libssh2 \
+  freerdp \
+  libvncserver \
+  libtelnet \
   mariadb mariadb-client \
   jq \
   curl \
