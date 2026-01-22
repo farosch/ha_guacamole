@@ -33,6 +33,7 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   harfbuzz \
   libpng \
   libjpeg-turbo \
+  guacamole-server \
   mariadb mariadb-client \
   jq \
   curl \
