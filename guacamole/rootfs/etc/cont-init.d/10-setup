@@ -57,13 +57,13 @@ MYSQL_PID=$!
 
 # Wait for MariaDB to be ready
 for i in $(seq 1 50); do
-  if mysqladmin --protocol=tcp -h127.0.0.1 -uroot ping >/dev/null 2>&1; then
+  if mysqladmin --socket=/run/mysqld/mysqld.sock -uroot ping >/dev/null 2>&1; then
     break
   fi
   sleep 0.5
 done
 
-if ! mysql --protocol=tcp -h127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1; then
+if ! mysql --socket=/run/mysqld/mysqld.sock -uroot -e 'SELECT 1' >/dev/null 2>&1; then
   echo "[init] ERROR: MariaDB did not start for initialization" >&2
   kill ${MYSQL_PID} || true
   exit 1
@@ -72,7 +72,7 @@ fi
 # If first run, create DB, user, and load schema
 if [ -f /data/.mysql_first_run ]; then
   echo "[init] Creating database, user and loading Guacamole schema"
-  mysql --protocol=tcp -h127.0.0.1 -uroot <<SQL
+  mysql --socket=/run/mysqld/mysqld.sock -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD}';
@@ -80,16 +80,16 @@ GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER,REFERENCES,INDEX ON ${DB_NAM
 GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER,REFERENCES,INDEX ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
-  mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} < \
+  mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < \
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/001-create-schema.sql"
-  mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} < \
+  mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < \
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/002-create-admin-user.sql"
-  mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} < \
+  mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < \
     "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/003-create-logging.sql"
   # Set admin password per add-on config on first run
   if [ -n "${ADMIN_PASSWORD}" ] && [ "${ADMIN_PASSWORD}" != "null" ]; then
     echo "[init] Applying configured admin password for user 'guacadmin'"
-    mysql --protocol=tcp -h127.0.0.1 -uroot ${DB_NAME} <<SQL
+    mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} <<SQL
 UPDATE guacamole_user
 SET password_hash = UNHEX(SHA2(CONCAT('${ADMIN_PASSWORD}', HEX(password_salt)), 256)),
     password_date = NOW(),
