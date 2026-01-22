@@ -1,10 +1,15 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
-ARG GUAC_VERSION=1.6.0
-FROM guacamole/guacd:${GUAC_VERSION} AS guacd_src
+FROM guacamole/guacd:1.6.0 AS guacd_src
+
+# Normalize paths from official guacd image into /export for later copy
+RUN set -e && mkdir -p /export && \
+  if [ -x /usr/local/sbin/guacd ]; then cp /usr/local/sbin/guacd /export/guacd; elif [ -x /usr/sbin/guacd ]; then cp /usr/sbin/guacd /export/guacd; fi && \
+  if [ -d /usr/local/lib/guacamole ]; then cp -a /usr/local/lib/guacamole /export/guacamole; elif [ -d /usr/lib/guacamole ]; then cp -a /usr/lib/guacamole /export/guacamole; elif [ -d /usr/lib/aarch64-linux-gnu/guacamole ]; then cp -a /usr/lib/aarch64-linux-gnu/guacamole /export/guacamole; fi && \
+  if ls /usr/local/lib/libguac* >/dev/null 2>&1; then cp /usr/local/lib/libguac* /export/; elif ls /usr/lib/libguac* >/dev/null 2>&1; then cp /usr/lib/libguac* /export/; elif ls /usr/lib/aarch64-linux-gnu/libguac* >/dev/null 2>&1; then cp /usr/lib/aarch64-linux-gnu/libguac* /export/; fi
 
 FROM $BUILD_FROM
 
-ENV GUAC_VERSION=${GUAC_VERSION} \
+ENV GUAC_VERSION=1.6.0 \
   GUAC_HOME=/data/guacamole \
   GUACAMOLE_HOME=/data/guacamole \
   TOMCAT_VERSION=9.0.85 \
@@ -34,10 +39,13 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   tar \
   ca-certificates
 
-# Copy guacd and protocol plugins from official image
-COPY --from=guacd_src /usr/local/sbin/guacd /usr/local/sbin/guacd
-COPY --from=guacd_src /usr/local/lib/guacamole /usr/local/lib/guacamole
-COPY --from=guacd_src /usr/local/lib/libguac* /usr/local/lib/
+# Copy guacd and protocol plugins from official image (normalized into /export)
+COPY --from=guacd_src /export /opt/guacd-export
+RUN set -e && \
+  if [ -f /opt/guacd-export/guacd ]; then install -D /opt/guacd-export/guacd /usr/local/sbin/guacd; fi && \
+  if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/local/lib/guacamole && cp -a /opt/guacd-export/guacamole/* /usr/local/lib/guacamole/; fi && \
+  if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/local/lib/; fi && \
+  rm -rf /opt/guacd-export
 
 # Download Tomcat
 RUN rm -rf ${TOMCAT_DIR} && \
