@@ -16,7 +16,6 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/community" >> /etc/apk/repositories && \
   apk add --no-cache \
   openjdk17-jre-headless \
-  guacamole-server \
   libssh2 \
   freerdp \
   libvncserver \
@@ -24,7 +23,25 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   jq \
   curl \
   tar \
-  ca-certificates
+  ca-certificates && \
+  # Build guacamole-server from source to ensure SSH/RDP/VNC plugins are installed
+  apk add --no-cache --virtual .build-deps \
+    build-base \
+    pkgconfig \
+    freerdp-dev \
+    libssh2-dev \
+    libvncserver-dev \
+    openssl-dev \
+    libjpeg-turbo-dev && \
+  wget -q "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/source/guacamole-server-${GUAC_VERSION}.tar.gz" -O /tmp/guacamole-server.tar.gz && \
+  tar -xzf /tmp/guacamole-server.tar.gz -C /tmp && \
+  cd /tmp/guacamole-server-${GUAC_VERSION} && \
+  ./configure --prefix=/usr && \
+  make -j$(nproc) && \
+  make install && \
+  ldconfig || true && \
+  cd / && rm -rf /tmp/guacamole-server* && \
+  apk del .build-deps
 
 # Download Tomcat
 RUN rm -rf ${TOMCAT_DIR} && \
