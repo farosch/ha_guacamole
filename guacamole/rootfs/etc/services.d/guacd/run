@@ -1,2 +1,3 @@
 #!/usr/bin/with-contenv bashio
-exec guacd -f
+# guacd is provided by guacamole-server package
+exec /usr/sbin/guacd -f

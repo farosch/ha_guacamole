@@ -1,4 +1,4 @@
-﻿ARG BUILD_FROM
+﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-addon-base:latest
 FROM $BUILD_FROM
 
 ENV GUAC_VERSION=1.5.5 \
@@ -9,16 +9,15 @@ ENV GUAC_VERSION=1.5.5 \
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
 
 RUN apk add --no-cache \
-    openjdk17-jre-headless \
-    tomcat-native \
-    tomcat \
-    guacd \
-    mariadb mariadb-client \
-    bashio \
-    jq \
-    curl \
-    tar \
-    ca-certificates
+  openjdk17-jre-headless \
+  tomcat-native \
+  tomcat \
+  guacamole-server \
+  mariadb mariadb-client \
+  jq \
+  curl \
+  tar \
+  ca-certificates
 
 # Download Guacamole WAR and JDBC MySQL auth extension
 RUN mkdir -p /opt/guacamole && \
