@@ -1,7 +1,10 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
+ARG GUAC_VERSION=1.6.0
+FROM guacamole/guacd:${GUAC_VERSION} AS guacd_src
+
 FROM $BUILD_FROM
 
-ENV GUAC_VERSION=1.6.0 \
+ENV GUAC_VERSION=${GUAC_VERSION} \
   GUAC_HOME=/data/guacamole \
   GUACAMOLE_HOME=/data/guacamole \
   TOMCAT_VERSION=9.0.85 \
@@ -16,7 +19,6 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/community" >> /etc/apk/repositories && \
   apk add --no-cache \
   openjdk17-jre-headless \
-  guacamole-server \
   libssh2 \
   freerdp \
   libvncserver \
@@ -31,6 +33,11 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   curl \
   tar \
   ca-certificates
+
+# Copy guacd and protocol plugins from official image
+COPY --from=guacd_src /usr/local/sbin/guacd /usr/local/sbin/guacd
+COPY --from=guacd_src /usr/local/lib/guacamole /usr/local/lib/guacamole
+COPY --from=guacd_src /usr/local/lib/libguac* /usr/local/lib/
 
 # Download Tomcat
 RUN rm -rf ${TOMCAT_DIR} && \
