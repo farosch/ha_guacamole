@@ -22,8 +22,8 @@ This add-on runs Apache Guacamole (web UI), guacd, and an internal MariaDB datab
 - URL: http://YOUR_HA_HOST:YOUR_PORT/guacamole/
 
 ## Network Port
-- The add-on exposes container port 8080. The external host port defaults to 8080 and can be changed in the add-on's Network tab.
-- Example: leave `8080/tcp` → `8080` (default), then open http://YOUR_HA_HOST:8080/guacamole/
+- The add-on exposes container port 8080. The external host port now defaults to 8321 and can be changed in the add-on's Network tab.
+- Example: leave `8080/tcp` → `8321` (default), then open http://YOUR_HA_HOST:8321/guacamole/
 
 ## Default Credentials (first run)
 - Username: `guacadmin`
