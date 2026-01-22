@@ -1,11 +1,11 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 FROM guacamole/guacd:1.6.0 AS guacd_src
 
-# Normalize paths from official guacd image into /export for later copy
-RUN set -e && mkdir -p /export && \
-  if [ -x /usr/local/sbin/guacd ]; then cp /usr/local/sbin/guacd /export/guacd; elif [ -x /usr/sbin/guacd ]; then cp /usr/sbin/guacd /export/guacd; fi && \
-  if [ -d /usr/local/lib/guacamole ]; then cp -a /usr/local/lib/guacamole /export/guacamole; elif [ -d /usr/lib/guacamole ]; then cp -a /usr/lib/guacamole /export/guacamole; elif [ -d /usr/lib/aarch64-linux-gnu/guacamole ]; then cp -a /usr/lib/aarch64-linux-gnu/guacamole /export/guacamole; fi && \
-  if ls /usr/local/lib/libguac* >/dev/null 2>&1; then cp /usr/local/lib/libguac* /export/; elif ls /usr/lib/libguac* >/dev/null 2>&1; then cp /usr/lib/libguac* /export/; elif ls /usr/lib/aarch64-linux-gnu/libguac* >/dev/null 2>&1; then cp /usr/lib/aarch64-linux-gnu/libguac* /export/; fi
+# Normalize paths from official guacd image into /tmp/export for later copy
+RUN set -e && mkdir -p /tmp/export && \
+  if [ -x /usr/local/sbin/guacd ]; then cp /usr/local/sbin/guacd /tmp/export/guacd; elif [ -x /usr/sbin/guacd ]; then cp /usr/sbin/guacd /tmp/export/guacd; fi && \
+  if [ -d /usr/local/lib/guacamole ]; then cp -a /usr/local/lib/guacamole /tmp/export/guacamole; elif [ -d /usr/lib/guacamole ]; then cp -a /usr/lib/guacamole /tmp/export/guacamole; elif [ -d /usr/lib/aarch64-linux-gnu/guacamole ]; then cp -a /usr/lib/aarch64-linux-gnu/guacamole /tmp/export/guacamole; fi && \
+  if ls /usr/local/lib/libguac* >/dev/null 2>&1; then cp /usr/local/lib/libguac* /tmp/export/; elif ls /usr/lib/libguac* >/dev/null 2>&1; then cp /usr/lib/libguac* /tmp/export/; elif ls /usr/lib/aarch64-linux-gnu/libguac* >/dev/null 2>&1; then cp /usr/lib/aarch64-linux-gnu/libguac* /tmp/export/; fi
 
 FROM $BUILD_FROM
 
@@ -39,8 +39,8 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   tar \
   ca-certificates
 
-# Copy guacd and protocol plugins from official image (normalized into /export)
-COPY --from=guacd_src /export /opt/guacd-export
+# Copy guacd and protocol plugins from official image (normalized into /tmp/export)
+COPY --from=guacd_src /tmp/export /opt/guacd-export
 RUN set -e && \
   if [ -f /opt/guacd-export/guacd ]; then install -D /opt/guacd-export/guacd /usr/local/sbin/guacd; fi && \
   if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/local/lib/guacamole && cp -a /opt/guacd-export/guacamole/* /usr/local/lib/guacamole/; fi && \
