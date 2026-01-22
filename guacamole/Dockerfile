@@ -1,23 +1,34 @@
-﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-addon-base:latest
+﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 FROM $BUILD_FROM
 
 ENV GUAC_VERSION=1.5.5 \
-    GUAC_HOME=/data/guacamole \
-    TOMCAT_WEBAPPS=/usr/share/tomcat/webapps \
+  GUAC_HOME=/data/guacamole \
+  GUACAMOLE_HOME=/data/guacamole \
+  TOMCAT_VERSION=9.0.85 \
+  TOMCAT_DIR=/opt/tomcat \
+  TOMCAT_WEBAPPS=/opt/tomcat/webapps \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2
 
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
 
-RUN apk add --no-cache \
+RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
+  echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/main" > /etc/apk/repositories && \
+  echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/community" >> /etc/apk/repositories && \
+  apk add --no-cache \
   openjdk17-jre-headless \
-  tomcat-native \
-  tomcat \
   guacamole-server \
   mariadb mariadb-client \
   jq \
   curl \
   tar \
   ca-certificates
+
+# Download Tomcat
+RUN mkdir -p ${TOMCAT_DIR} && \
+    curl -fsSL "https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" -o /tmp/tomcat.tar.gz && \
+    tar -xzf /tmp/tomcat.tar.gz -C /opt && \
+    mv /opt/apache-tomcat-${TOMCAT_VERSION} ${TOMCAT_DIR} && \
+    rm -f /tmp/tomcat.tar.gz
 
 # Download Guacamole WAR and JDBC MySQL auth extension
 RUN mkdir -p /opt/guacamole && \
