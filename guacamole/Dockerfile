@@ -20,7 +20,6 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   libssh2 \
   freerdp \
   libvncserver \
-  libtelnet \
   mariadb mariadb-client \
   jq \
   curl \
