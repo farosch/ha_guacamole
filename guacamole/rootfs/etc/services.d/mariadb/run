@@ -1,0 +1,2 @@
+#!/usr/bin/with-contenv bashio
+exec mysqld --user=mysql --datadir=/data/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1
