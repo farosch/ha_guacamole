@@ -3,8 +3,7 @@ version: "1.5.5"
 slug: guacamole
 description: Apache Guacamole remote desktop gateway
 arch:
-  - amd64
-  - arm64
+  - aarch64
 startup: services
 boot: auto
 panel_icon: mdi:remote-desktop
