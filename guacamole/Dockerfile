@@ -1,7 +1,7 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 FROM $BUILD_FROM
 
-ENV GUAC_VERSION=1.5.5 \
+ENV GUAC_VERSION=1.6.0 \
   GUAC_HOME=/data/guacamole \
   GUACAMOLE_HOME=/data/guacamole \
   TOMCAT_VERSION=9.0.85 \

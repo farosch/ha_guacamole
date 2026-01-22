@@ -96,14 +96,25 @@ SQL
   # Set admin password per add-on config on first run
   if [ -n "${ADMIN_PASSWORD}" ] && [ "${ADMIN_PASSWORD}" != "null" ]; then
     echo "[init] Applying configured admin password for user 'guacadmin'"
-    mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} <<SQL
-UPDATE guacamole_user
-SET password_hash = UNHEX(SHA2(CONCAT('${ADMIN_PASSWORD}', HEX(password_salt)), 256)),
-    password_date = NOW(),
-    expired = 0,
-    disabled = 0
-WHERE username = 'guacadmin';
-SQL
+    # Detect column names to support schema differences
+    USER_COL=$(mysql --socket=/run/mysqld/mysqld.sock -uroot -N ${DB_NAME} -e "SHOW COLUMNS FROM guacamole_user LIKE 'username';" | awk '{print $1}')
+    if [ -z "${USER_COL}" ]; then
+      USER_COL=$(mysql --socket=/run/mysqld/mysqld.sock -uroot -N ${DB_NAME} -e "SHOW COLUMNS FROM guacamole_user LIKE 'user_name';" | awk '{print $1}')
+    fi
+    if [ -z "${USER_COL}" ]; then
+      echo "[init] WARNING: Could not detect username column in guacamole_user; skipping admin password set" >&2
+    else
+      SET_CLAUSES="password_hash = UNHEX(SHA2(CONCAT('${ADMIN_PASSWORD}', HEX(password_salt)), 256)), password_date = NOW()"
+      HAS_DISABLED=$(mysql --socket=/run/mysqld/mysqld.sock -uroot -N ${DB_NAME} -e "SHOW COLUMNS FROM guacamole_user LIKE 'disabled';" | wc -l)
+      HAS_EXPIRED=$(mysql --socket=/run/mysqld/mysqld.sock -uroot -N ${DB_NAME} -e "SHOW COLUMNS FROM guacamole_user LIKE 'expired';" | wc -l)
+      if [ "${HAS_DISABLED}" = "1" ]; then
+        SET_CLAUSES="${SET_CLAUSES}, disabled = 0"
+      fi
+      if [ "${HAS_EXPIRED}" = "1" ]; then
+        SET_CLAUSES="${SET_CLAUSES}, expired = 0"
+      fi
+      mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} -e "UPDATE guacamole_user SET ${SET_CLAUSES} WHERE ${USER_COL} = 'guacadmin';"
+    fi
   fi
   rm -f /data/.mysql_first_run
 fi
