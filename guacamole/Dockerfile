@@ -51,7 +51,9 @@ RUN mkdir -p ${GUAC_HOME}/extensions ${GUAC_HOME}/lib /data/mysql /run/mysqld /e
 COPY rootfs /
 
 # Ensure init and service scripts are executable
-RUN chmod +x /etc/cont-init.d/* /etc/services.d/*/run
+RUN find /etc/cont-init.d -type f -exec chmod 0755 {} \; && \
+  find /etc/services.d -type f -name run -exec chmod 0755 {} \; && \
+  sed -i 's/\r$//' /etc/cont-init.d/* /etc/services.d/*/run
 
 EXPOSE 8080
 
