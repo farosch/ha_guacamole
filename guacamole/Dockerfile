@@ -44,8 +44,8 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
 COPY --from=guacd_src /tmp/export /opt/guacd-export
 RUN set -e && \
   if [ -f /opt/guacd-export/guacd ]; then install -D /opt/guacd-export/guacd /usr/local/sbin/guacd; fi && \
-  if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/local/lib/guacamole && cp -a /opt/guacd-export/guacamole/* /usr/local/lib/guacamole/; fi && \
-  if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/local/lib/; fi && \
+  if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/lib/guacamole && cp -a /opt/guacd-export/guacamole/* /usr/lib/guacamole/; fi && \
+  if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/lib/; fi && \
   rm -rf /opt/guacd-export
 
 # Download Tomcat

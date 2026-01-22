@@ -12,4 +12,17 @@ if [ -z "$GUACD_BIN" ]; then
 	echo "[guacd] ERROR: guacd binary not found" >&2
 	exit 1
 fi
-exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822
+
+# Prefer Alpine default plugin directory, fallback to /usr/local
+LIB_DIR=""
+if [ -d /usr/lib/guacamole ]; then
+	LIB_DIR=/usr/lib/guacamole
+elif [ -d /usr/local/lib/guacamole ]; then
+	LIB_DIR=/usr/local/lib/guacamole
+fi
+
+if [ -n "$LIB_DIR" ]; then
+	exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822 -L "$LIB_DIR"
+else
+	exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822
+fi
