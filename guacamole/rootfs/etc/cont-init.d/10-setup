@@ -43,6 +43,18 @@ mysql-password: ${DB_PASSWORD}
 EOF
 fi
 
+# Ensure guacd settings use IPv4 localhost even if file pre-exists
+if [ -f "/data/guacamole/guacamole.properties" ]; then
+  # Remove any existing guacd-hostname/guacd-port lines
+  sed -i '/^guacd-hostname:/d' /data/guacamole/guacamole.properties
+  sed -i '/^guacd-port:/d' /data/guacamole/guacamole.properties
+  # Append enforced settings
+  cat >> /data/guacamole/guacamole.properties <<EOF
+guacd-hostname: 127.0.0.1
+guacd-port: 4822
+EOF
+fi
+
 # Initialize MariaDB data dir if first run
 if [ ! -d "/data/mysql/mysql" ]; then
   echo "[init] Initializing MariaDB data directory"
