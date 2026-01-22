@@ -1,4 +1,15 @@
 #!/usr/bin/with-contenv sh
-# guacd is provided by guacamole-server package
-# Bind explicitly to IPv4 localhost to match guacamole.properties
-exec /usr/sbin/guacd -f -b 127.0.0.1 -l 4822
+# Start guacd, locating the binary regardless of install prefix
+set -e
+GUACD_BIN=$(command -v guacd || true)
+if [ -z "$GUACD_BIN" ]; then
+	if [ -x /usr/sbin/guacd ]; then GUACD_BIN=/usr/sbin/guacd; fi
+fi
+if [ -z "$GUACD_BIN" ]; then
+	if [ -x /usr/local/sbin/guacd ]; then GUACD_BIN=/usr/local/sbin/guacd; fi
+fi
+if [ -z "$GUACD_BIN" ]; then
+	echo "[guacd] ERROR: guacd binary not found" >&2
+	exit 1
+fi
+exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822

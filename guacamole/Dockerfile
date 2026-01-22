@@ -32,7 +32,12 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
     libssh2-dev \
     libvncserver-dev \
     openssl-dev \
-    libjpeg-turbo-dev && \
+    libjpeg-turbo-dev \
+    cairo-dev \
+    libpng-dev \
+    pango-dev \
+    glib-dev \
+    harfbuzz-dev && \
   wget -q "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/source/guacamole-server-${GUAC_VERSION}.tar.gz" -O /tmp/guacamole-server.tar.gz && \
   tar -xzf /tmp/guacamole-server.tar.gz -C /tmp && \
   cd /tmp/guacamole-server-${GUAC_VERSION} && \
@@ -40,6 +45,8 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   make -j$(nproc) && \
   make install && \
   ldconfig || true && \
+  # Ensure guacd is discoverable in expected location
+  if [ -x /usr/local/sbin/guacd ] && [ ! -e /usr/sbin/guacd ]; then ln -s /usr/local/sbin/guacd /usr/sbin/guacd; fi && \
   cd / && rm -rf /tmp/guacamole-server* && \
   apk del .build-deps
 
