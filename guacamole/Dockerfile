@@ -30,15 +30,19 @@ RUN mkdir -p ${TOMCAT_DIR} && \
     mv /opt/apache-tomcat-${TOMCAT_VERSION} ${TOMCAT_DIR} && \
     rm -f /tmp/tomcat.tar.gz
 
-# Download Guacamole WAR and JDBC MySQL auth extension
-RUN mkdir -p /opt/guacamole && \
-    curl -fsSL "https://downloads.apache.org/guacamole/${GUAC_VERSION}/binary/guacamole-${GUAC_VERSION}.war" -o "${TOMCAT_WEBAPPS}/guacamole.war" && \
-    curl -fsSL "https://downloads.apache.org/guacamole/${GUAC_VERSION}/binary/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz" -o \
+# Download Guacamole WAR and JDBC MySQL auth extension (use archive.apache.org; write to /tmp then move)
+RUN mkdir -p /opt/guacamole ${TOMCAT_WEBAPPS} && \
+    apk add --no-cache wget && \
+    wget -q "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/binary/guacamole-${GUAC_VERSION}.war" -O /tmp/guacamole.war && \
+    test -s /tmp/guacamole.war && mv /tmp/guacamole.war "${TOMCAT_WEBAPPS}/guacamole.war" && \
+    wget -q "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/binary/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz" -O \
       "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz" && \
+    test -s "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz" && \
     tar -xzf "/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz" -C /opt/guacamole && \
     # MySQL JDBC driver
-    curl -fsSL "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar" -o \
-      "/opt/guacamole/mysql-connector-j.jar"
+    wget -q "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar" -O \
+      "/opt/guacamole/mysql-connector-j.jar" && \
+    test -s "/opt/guacamole/mysql-connector-j.jar"
 
 # Create directories used by services and persistence
 RUN mkdir -p ${GUAC_HOME}/extensions ${GUAC_HOME}/lib /data/mysql /run/mysqld /etc/services.d /etc/cont-init.d
