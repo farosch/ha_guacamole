@@ -1,11 +1,22 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 FROM guacamole/guacd:1.6.0 AS guacd_src
 
-# Normalize paths from official guacd image into /tmp/export for later copy
-RUN set -e && mkdir -p /tmp/export && \
-  if [ -x /usr/local/sbin/guacd ]; then cp /usr/local/sbin/guacd /tmp/export/guacd; elif [ -x /usr/sbin/guacd ]; then cp /usr/sbin/guacd /tmp/export/guacd; fi && \
-  if [ -d /usr/local/lib/guacamole ]; then cp -a /usr/local/lib/guacamole /tmp/export/guacamole; elif [ -d /usr/lib/guacamole ]; then cp -a /usr/lib/guacamole /tmp/export/guacamole; elif [ -d /usr/lib/aarch64-linux-gnu/guacamole ]; then cp -a /usr/lib/aarch64-linux-gnu/guacamole /tmp/export/guacamole; fi && \
-  if ls /usr/local/lib/libguac* >/dev/null 2>&1; then cp /usr/local/lib/libguac* /tmp/export/; elif ls /usr/lib/libguac* >/dev/null 2>&1; then cp /usr/lib/libguac* /tmp/export/; elif ls /usr/lib/aarch64-linux-gnu/libguac* >/dev/null 2>&1; then cp /usr/lib/aarch64-linux-gnu/libguac* /tmp/export/; fi
+# Extract guacd binary and protocol/client libraries from the official image
+RUN set -e && mkdir -p /tmp/export/guacamole && \
+  # Copy guacd binary from common locations
+  for b in /usr/local/sbin/guacd /usr/sbin/guacd /usr/bin/guacd; do \
+    if [ -x "$b" ]; then cp "$b" /tmp/export/guacd; break; fi; \
+  done && \
+  # Copy any existing guacamole plugin directories
+  for d in /usr/local/lib/guacamole /usr/lib/guacamole /usr/lib/aarch64-linux-gnu/guacamole /opt/guacamole/lib/guacamole; do \
+    if [ -d "$d" ]; then cp -a "$d"/* /tmp/export/guacamole/; fi; \
+  done && \
+  # Find and copy protocol client libraries wherever they are
+  find /usr /opt -type f -name 'libguac-client-*.so' -exec cp -t /tmp/export/guacamole {} + && \
+  # Copy core libguac libraries
+  for l in /usr/local/lib/libguac* /usr/lib/libguac* /usr/lib/aarch64-linux-gnu/libguac*; do \
+    if ls $l >/dev/null 2>&1; then cp $l /tmp/export/; fi; \
+  done
 
 FROM $BUILD_FROM
 
