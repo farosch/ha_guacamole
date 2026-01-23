@@ -14,4 +14,4 @@ if [ -z "$GUACD_BIN" ]; then
 fi
 
 # Start guacd with info log level; rely on default plugin path
-exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822 -L INFO
+exec "$GUACD_BIN" -f -b 127.0.0.1 -l 4822
