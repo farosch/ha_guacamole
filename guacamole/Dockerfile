@@ -1,4 +1,52 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
+
+# Build guacamole-server (guacd + protocol plugins) from source
+FROM $BUILD_FROM AS build_guacd
+
+SHELL ["/bin/ash", "-o", "pipefail", "-c"]
+
+RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
+  echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/main" > /etc/apk/repositories && \
+  echo "https://dl-cdn.alpinelinux.org/alpine/v${ALP_VER}/community" >> /etc/apk/repositories && \
+  apk add --no-cache \
+  build-base \
+  autoconf automake libtool \
+  pkgconfig cmake \
+  git curl tar \
+  zlib-dev openssl-dev \
+  freerdp-dev \
+  libvncserver-dev \
+  libssh2-dev \
+  cairo-dev \
+  pango-dev \
+  harfbuzz-dev \
+  libpng-dev \
+  libjpeg-turbo-dev \
+  libwebp-dev \
+  fontconfig ttf-dejavu
+
+# Build and install libtelnet (required for telnet protocol)
+ENV LIBTELNET_VERSION=0.23
+RUN set -e && \
+  curl -fsSL -o /tmp/libtelnet.tar.gz "https://github.com/kinetiknz/libtelnet/archive/refs/tags/${LIBTELNET_VERSION}.tar.gz" && \
+  mkdir -p /tmp/libtelnet && tar -xzf /tmp/libtelnet.tar.gz -C /tmp/libtelnet --strip-components=1 && \
+  cd /tmp/libtelnet && \
+  ./configure --prefix=/usr && \
+  make -j$(nproc) && make install && \
+  rm -rf /tmp/libtelnet /tmp/libtelnet.tar.gz
+
+# Build and install guacamole-server (guacd)
+ENV GUAC_VERSION=1.6.0
+RUN set -e && \
+  curl -fsSL -o /tmp/guac-server.tar.gz "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/source/guacamole-server-${GUAC_VERSION}.tar.gz" && \
+  mkdir -p /tmp/guac-server && tar -xzf /tmp/guac-server.tar.gz -C /tmp/guac-server --strip-components=1 && \
+  cd /tmp/guac-server && \
+  ./configure --prefix=/usr && \
+  make -j$(nproc) && make install && \
+  ldconfig || true && \
+  rm -rf /tmp/guac-server /tmp/guac-server.tar.gz
+
+# Final runtime image
 FROM $BUILD_FROM
 
 ENV GUAC_VERSION=1.6.0 \
@@ -25,17 +73,24 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   harfbuzz \
   libpng \
   libjpeg-turbo \
+  libwebp \
   fontconfig \
   ttf-dejavu \
   busybox-extras \
-  guacamole-server \
+  openssl \
   mariadb mariadb-client \
   jq \
   curl \
   tar \
   ca-certificates
 
-# Ensure protocol client libraries are present in the default directory
+# Copy guacd and protocol plugins from build stage
+COPY --from=build_guacd /usr/sbin/guacd /usr/sbin/guacd
+COPY --from=build_guacd /usr/lib/guacamole /usr/lib/guacamole
+COPY --from=build_guacd /usr/lib/libguac* /usr/lib/
+COPY --from=build_guacd /usr/lib/libtelnet* /usr/lib/
+
+# Verify protocol client libraries are present
 RUN set -e && mkdir -p /usr/lib/guacamole && \
   echo "[build] Contents of /usr/lib/guacamole:" && ls -la /usr/lib/guacamole || true
 
