@@ -145,10 +145,17 @@ fi
 echo "[init] Initialization complete"
 
 # Log available guacd protocol plugins for diagnostics
-for proto in ssh rdp vnc; do
+for proto in ssh rdp vnc telnet; do
   if [ -f "/usr/lib/guacamole/libguac-client-${proto}.so" ] || [ -f "/usr/local/lib/guacamole/libguac-client-${proto}.so" ]; then
     echo "[init] Protocol '${proto}' plugin present"
   else
     echo "[init] WARNING: Protocol '${proto}' plugin missing"
+  fi
+done
+
+# Dependency diagnostics for protocol plugins (ldd output)
+for so in /usr/lib/guacamole/libguac-client-*.so; do
+  if [ -f "$so" ]; then
+    echo "[init] ldd $so:" && ldd "$so" || true
   fi
 done

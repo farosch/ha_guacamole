@@ -36,6 +36,7 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   apk add --no-cache \
   openjdk17-jre-headless \
   libssh2 \
+  libtelnet \
   freerdp \
   libvncserver \
   cairo \
@@ -44,6 +45,8 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   harfbuzz \
   libpng \
   libjpeg-turbo \
+  fontconfig \
+  ttf-dejavu \
   guacamole-server \
   mariadb mariadb-client \
   jq \
@@ -62,6 +65,12 @@ RUN set -e && \
 # Ensure protocol client libraries are present in the default directory
 RUN set -e && mkdir -p /usr/lib/guacamole && \
   find /usr -type f -name 'libguac-client-*.so' -exec cp -t /usr/lib/guacamole {} + || true
+
+# Verify protocol plugins and FreeRDP plugin directory (diagnostics only)
+RUN set -e && echo "[build] Listing protocol plugins under /usr/lib/guacamole" && \
+  ls -la /usr/lib/guacamole || true && \
+  echo "[build] Checking FreeRDP plugin directory" && \
+  if [ -d /usr/lib/freerdp3 ]; then ls -la /usr/lib/freerdp3; elif [ -d /usr/lib/freerdp2 ]; then ls -la /usr/lib/freerdp2; else echo "[build] WARNING: FreeRDP plugins directory not found"; fi
 
 # Download Tomcat
 RUN rm -rf ${TOMCAT_DIR} && \
