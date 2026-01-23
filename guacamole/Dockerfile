@@ -26,18 +26,20 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   fontconfig ttf-dejavu
 
 # Build and install libtelnet (required for telnet protocol)
-ENV LIBTELNET_VERSION=0.21
+ENV LIBTELNET_VERSION=0.23
 RUN set -e && \
-  # Try multiple tag formats to avoid 404s
-  (curl -fSL -o /tmp/libtelnet.tar.gz "https://github.com/kinetiknz/libtelnet/archive/refs/tags/${LIBTELNET_VERSION}.tar.gz" \
-   || curl -fSL -o /tmp/libtelnet.tar.gz "https://github.com/kinetiknz/libtelnet/archive/refs/tags/v${LIBTELNET_VERSION}.tar.gz" \
-   || curl -fSL -o /tmp/libtelnet.tar.gz "https://github.com/kinetiknz/libtelnet/archive/refs/tags/libtelnet-${LIBTELNET_VERSION}.tar.gz") && \
-  mkdir -p /tmp/libtelnet && tar -xzf /tmp/libtelnet.tar.gz -C /tmp/libtelnet --strip-components=1 && \
-  cd /tmp/libtelnet && \
-  autoreconf -fi || true && \
-  ./configure --prefix=/usr && \
-  make -j$(nproc) && make install && \
-  rm -rf /tmp/libtelnet /tmp/libtelnet.tar.gz
+  # Fetch from the correct upstream repo; fall back gracefully if unavailable
+  if (curl -fSL -o /tmp/libtelnet.tar.gz "https://codeload.github.com/seanmiddleditch/libtelnet/tar.gz/refs/tags/v${LIBTELNET_VERSION}" \
+      || curl -fSL -o /tmp/libtelnet.tar.gz "https://codeload.github.com/seanmiddleditch/libtelnet/tar.gz/refs/tags/${LIBTELNET_VERSION}"); then \
+    mkdir -p /tmp/libtelnet && tar -xzf /tmp/libtelnet.tar.gz -C /tmp/libtelnet --strip-components=1 && \
+    cd /tmp/libtelnet && \
+    autoreconf -fi || true && \
+    ./configure --prefix=/usr && \
+    make -j$(nproc) && make install && \
+    rm -rf /tmp/libtelnet /tmp/libtelnet.tar.gz; \
+  else \
+    echo "[build] WARNING: libtelnet ${LIBTELNET_VERSION} download failed; Telnet protocol will be disabled."; \
+  fi
 
 # Build and install guacamole-server (guacd)
 ENV GUAC_VERSION=1.6.0
