@@ -1,6 +1,7 @@
 #!/usr/bin/with-contenv sh
 # Start guacd, locating the binary regardless of install prefix
 set -e
+export LD_LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib/guacamole"
 GUACD_BIN=$(command -v guacd || true)
 if [ -z "$GUACD_BIN" ]; then
 	if [ -x /usr/sbin/guacd ]; then GUACD_BIN=/usr/sbin/guacd; fi

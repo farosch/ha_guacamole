@@ -1,25 +1,4 @@
 ﻿ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
-FROM guacamole/guacd:1.6.0 AS guacd_src
-
-# Extract guacd binary and protocol/client libraries from the official image
-RUN set -e && mkdir -p /tmp/export/guacamole && \
-  # Copy guacd binary from common locations
-  for b in /usr/local/sbin/guacd /usr/sbin/guacd /usr/bin/guacd; do \
-    if [ -x "$b" ]; then cp "$b" /tmp/export/guacd; break; fi; \
-  done && \
-  # Copy any existing guacamole plugin directories
-  for d in /usr/local/lib/guacamole /usr/lib/guacamole /usr/lib/aarch64-linux-gnu/guacamole /opt/guacamole/lib/guacamole; do \
-    if [ -d "$d" ]; then cp -a "$d"/* /tmp/export/guacamole/; fi; \
-  done && \
-  # Find and copy protocol client libraries wherever they are
-  find /usr /opt -type f -name 'libguac-client-*.so' -exec cp -t /tmp/export/guacamole {} + && \
-  # Copy libtelnet shared libraries for telnet plugin
-  find /usr /opt -type f -name 'libtelnet*.so*' -exec cp -t /tmp/export {} + && \
-  # Copy core libguac libraries
-  for l in /usr/local/lib/libguac* /usr/lib/libguac* /usr/lib/aarch64-linux-gnu/libguac*; do \
-    if ls $l >/dev/null 2>&1; then cp $l /tmp/export/; fi; \
-  done
-
 FROM $BUILD_FROM
 
 ENV GUAC_VERSION=1.6.0 \
@@ -56,23 +35,12 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   tar \
   ca-certificates
 
-# Copy guacd and protocol plugins from official image (normalized into /tmp/export)
-COPY --from=guacd_src /tmp/export /opt/guacd-export
-RUN set -e && \
-  if [ -f /opt/guacd-export/guacd ]; then install -D /opt/guacd-export/guacd /usr/local/sbin/guacd; fi && \
-  if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/lib/guacamole && cp -a /opt/guacd-export/guacamole/. /usr/lib/guacamole/; fi && \
-  if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/lib/; fi && \
-  if ls /opt/guacd-export/libtelnet* >/dev/null 2>&1; then cp /opt/guacd-export/libtelnet* /usr/lib/; fi && \
-  rm -rf /opt/guacd-export
-
 # Ensure protocol client libraries are present in the default directory
 RUN set -e && mkdir -p /usr/lib/guacamole && \
-  find /usr -type f -name 'libguac-client-*.so' -exec cp -t /usr/lib/guacamole {} + || true
+  echo "[build] Contents of /usr/lib/guacamole:" && ls -la /usr/lib/guacamole || true
 
 # Verify protocol plugins and FreeRDP plugin directory (diagnostics only)
-RUN set -e && echo "[build] Listing protocol plugins under /usr/lib/guacamole" && \
-  ls -la /usr/lib/guacamole || true && \
-  echo "[build] Checking FreeRDP plugin directory" && \
+RUN set -e && echo "[build] Checking FreeRDP plugin directory" && \
   if [ -d /usr/lib/freerdp3 ]; then ls -la /usr/lib/freerdp3; elif [ -d /usr/lib/freerdp2 ]; then ls -la /usr/lib/freerdp2; else echo "[build] WARNING: FreeRDP plugins directory not found"; fi
 
 # Download Tomcat
