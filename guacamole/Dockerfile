@@ -96,7 +96,7 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   # Runtime libs for optional features
   ffmpeg-libs \
   libogg libvorbis \
-  pulseaudio-libs \
+  libpulse \
   libwebsockets \
   mariadb mariadb-client \
   jq \
