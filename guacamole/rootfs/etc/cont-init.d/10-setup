@@ -83,7 +83,7 @@ fi
 
 # Start temporary MariaDB to create DB/user and load schema on first run
 echo "[init] Starting temporary MariaDB for initialization"
-mysqld --user=mysql --datadir=/data/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1 --skip-networking=0 &
+/usr/bin/mariadbd --user=mysql --datadir=/data/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1 --skip-networking=0 &
 MYSQL_PID=$!
 
 # Wait for MariaDB to be ready
