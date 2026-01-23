@@ -1,5 +1,5 @@
 ﻿name: Guacamole
-version: "1.6.0-17"
+version: "1.6.0-18"
 slug: guacamole
 description: Apache Guacamole remote desktop gateway
 arch:
@@ -14,11 +14,3 @@ init: false
 ports:
   8080/tcp: 8321
 webui: http://[HOST]:[PORT:8321]/guacamole/
-options:
-  db_user: guacamole
-  db_password: changeme
-  admin_password: guacadmin
-schema:
-  db_user: str
-  db_password: password
-  admin_password: password
