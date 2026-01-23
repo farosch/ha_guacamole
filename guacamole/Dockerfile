@@ -23,7 +23,12 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   libpng-dev \
   libjpeg-turbo-dev \
   libwebp-dev \
-  fontconfig ttf-dejavu
+  fontconfig ttf-dejavu \
+  # Enable full feature set
+  ffmpeg-dev \
+  libogg-dev libvorbis-dev \
+  pulseaudio-dev \
+  libwebsockets-dev
 
 # Build and install libtelnet (required for telnet protocol)
 ENV LIBTELNET_VERSION=0.23
@@ -42,13 +47,14 @@ RUN set -e && \
   fi
 
 # Build and install guacamole-server (guacd)
-ENV GUAC_VERSION=1.6.0
+ENV GUAC_VERSION=1.6.0 \
+  GUAC_BUILD_CFLAGS="-Wno-error=deprecated-declarations"
 RUN set -e && \
   curl -fsSL -o /tmp/guac-server.tar.gz "https://archive.apache.org/dist/guacamole/${GUAC_VERSION}/source/guacamole-server-${GUAC_VERSION}.tar.gz" && \
   mkdir -p /tmp/guac-server && tar -xzf /tmp/guac-server.tar.gz -C /tmp/guac-server --strip-components=1 && \
   cd /tmp/guac-server && \
-  ./configure --prefix=/usr && \
-  make -j$(nproc) && make install && \
+  CFLAGS="${CFLAGS} ${GUAC_BUILD_CFLAGS}" ./configure --prefix=/usr && \
+  CFLAGS="${CFLAGS} ${GUAC_BUILD_CFLAGS}" make -j$(nproc) && make install && \
   ldconfig || true && \
   # Ensure guacd is available at a predictable path for COPY
   GUACD=$(command -v guacd || true) && \
@@ -87,6 +93,11 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   ttf-dejavu \
   busybox-extras \
   openssl \
+  # Runtime libs for optional features
+  ffmpeg-libs \
+  libogg libvorbis \
+  pulseaudio-libs \
+  libwebsockets \
   mariadb mariadb-client \
   jq \
   curl \
