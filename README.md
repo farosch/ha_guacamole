@@ -1,6 +1,6 @@
 # Apache Guacamole Home Assistant Add-on
 
-<img src="guacamole/logo.png" alt="Guacamole Add-on" width="100" />
+<img src="guacamole/logo.png" alt="Guacamole Add-on" width="220" />
 
 This add-on runs Apache Guacamole (web UI), guacd, and an internal MariaDB database in a single container. Data is stored under `/data` and survives updates.
 
