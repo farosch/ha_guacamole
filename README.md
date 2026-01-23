@@ -12,9 +12,31 @@ This add-on runs Apache Guacamole (web UI), guacd, and an internal MariaDB datab
 
 ## Installation
 
-1. In Home Assistant, add this repository as an Add-on repository.
-2. Open the "Guacamole" add-on and click Install.
-3. Start the add-on. No configuration is required.
+### 1-Click Setup
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ffarosch%2Fha_guacamole)
+
+### Manual Installation
+
+1. In Home Assistant, add a repository.
+2. Use `https://github.com/farosch/ha_guacamole/` as URL.
+3. Open the "Guacamole" add-on and click Install.
+4. Start the add-on. No configuration is required.
+
+### DEV Builds
+
+#### 1-Click Setup
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ffarosch%2Fha_guacamole%2Ftree%2Fdevelop)
+
+#### Manual Installation
+
+1. In Home Assistant, add a repository.
+2. Use `https://github.com/farosch/ha_guacamole/tree/develop` as URL.
+3. Open the "Guacamole" add-on and click Install.
+4. Start the add-on. No configuration is required.
+
+You can also use this
 
 ## Access
 

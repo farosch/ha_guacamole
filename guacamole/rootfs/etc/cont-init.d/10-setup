@@ -13,6 +13,7 @@ rm -f /run/mysqld/mysqld.sock
 # Credentials: predefined DB username, random password on first install
 DB_NAME="guacamole_db"
 DB_USER="guacamole"
+VERSION_FILE="/data/guacamole/VERSION"
 CRED_FILE="/data/guacamole/credentials.env"
 if [ -f "$CRED_FILE" ]; then
   # Load existing credentials
@@ -134,48 +135,47 @@ SQL
   echo "[init] Database Password: ${DB_PASSWORD}"
   printf "[init] \033[31mIMPORTANT: Database password is shown only once.\033[0m\n"
   echo "[init] ------------------------------------------------------"
+  # Persist the current Guacamole version for future upgrade checks
+  echo "${GUAC_VERSION}" > "${VERSION_FILE}"
   rm -f /data/.mysql_first_run
 fi
 
-# If not first run, check for and apply JDBC schema upgrades
+# If not first run, check current vs stored version and apply target upgrade script only
 if [ ! -f /data/.mysql_first_run ]; then
-  echo "[init] Checking for JDBC schema upgrade scripts"
-  # Ensure migrations tracking table exists
-  mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} <<SQL
-CREATE TABLE IF NOT EXISTS guac_migrations (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  script VARCHAR(255) NOT NULL UNIQUE,
-  applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-SQL
-  # Prefer schema/upgrade directory; fallback to mysql/upgrade
-  SCHEMA_UPGRADE_DIR="/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/upgrade"
-  ALT_UPGRADE_DIR="/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/upgrade"
-  UPG_DIR=""
-  if [ -d "${SCHEMA_UPGRADE_DIR}" ]; then
-    UPG_DIR="${SCHEMA_UPGRADE_DIR}"
-  elif [ -d "${ALT_UPGRADE_DIR}" ]; then
-    UPG_DIR="${ALT_UPGRADE_DIR}"
+  STORED_VERSION=""
+  if [ -f "${VERSION_FILE}" ]; then
+    STORED_VERSION=$(cat "${VERSION_FILE}" 2>/dev/null || true)
   fi
-  if [ -n "${UPG_DIR}" ]; then
-    echo "[init] Found upgrade directory: ${UPG_DIR}"
-    for sql in $(ls -1 "${UPG_DIR}"/*.sql 2>/dev/null | sort); do
-      base=$(basename "$sql")
-      # Skip if already applied
-      if mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} -N -e "SELECT 1 FROM guac_migrations WHERE script='${base}'" | grep -q 1; then
-        echo "[init] Skipping already applied upgrade: ${base}"
-        continue
-      fi
-      echo "[init] Applying upgrade: ${base}"
-      if mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < "$sql"; then
-        mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} -e "INSERT INTO guac_migrations (script) VALUES ('${base}')"
-        echo "[init] Applied upgrade: ${base}"
+  if [ -z "${STORED_VERSION}" ]; then
+    # If version file is missing, assume current version to avoid redundant upgrades
+    echo "[init] Version file missing; initializing to ${GUAC_VERSION}"
+    echo "${GUAC_VERSION}" > "${VERSION_FILE}"
+  elif [ "${STORED_VERSION}" != "${GUAC_VERSION}" ]; then
+    echo "[init] Detected Guacamole version change: ${STORED_VERSION} -> ${GUAC_VERSION}"
+    UPGRADE_SQL="/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/upgrade/upgrade-pre-${GUAC_VERSION}.sql"
+    ALT_UPGRADE_SQL="/opt/guacamole/guacamole-auth-jdbc-${GUAC_VERSION}/mysql/upgrade/upgrade-pre-${GUAC_VERSION}.sql"
+    if [ -f "${UPGRADE_SQL}" ]; then
+      echo "[init] Applying JDBC upgrade script: $(basename "${UPGRADE_SQL}")"
+      if mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < "${UPGRADE_SQL}"; then
+        echo "${GUAC_VERSION}" > "${VERSION_FILE}"
+        echo "[init] Database schema upgraded to ${GUAC_VERSION}"
       else
-        echo "[init] ERROR applying upgrade: ${base}" >&2
+        echo "[init] ERROR applying ${UPGRADE_SQL}" >&2
       fi
-    done
+    elif [ -f "${ALT_UPGRADE_SQL}" ]; then
+      echo "[init] Applying JDBC upgrade script: $(basename "${ALT_UPGRADE_SQL}")"
+      if mysql --socket=/run/mysqld/mysqld.sock -uroot ${DB_NAME} < "${ALT_UPGRADE_SQL}"; then
+        echo "${GUAC_VERSION}" > "${VERSION_FILE}"
+        echo "[init] Database schema upgraded to ${GUAC_VERSION}"
+      else
+        echo "[init] ERROR applying ${ALT_UPGRADE_SQL}" >&2
+      fi
+    else
+      echo "[init] No upgrade-pre-${GUAC_VERSION}.sql found; skipping schema upgrade"
+      echo "${GUAC_VERSION}" > "${VERSION_FILE}"
+    fi
   else
-    echo "[init] No upgrade directory present for JDBC ${GUAC_VERSION}"
+    echo "[init] Guacamole version unchanged (${GUAC_VERSION}); no schema upgrade needed"
   fi
 fi
 
