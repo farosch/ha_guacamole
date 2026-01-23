@@ -1,5 +1,5 @@
 ﻿name: Guacamole
-version: "1.6.0-16"
+version: "1.6.0-17"
 slug: guacamole
 description: Apache Guacamole remote desktop gateway
 arch:

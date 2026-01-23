@@ -59,6 +59,10 @@ RUN set -e && \
   if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/lib/; fi && \
   rm -rf /opt/guacd-export
 
+# Ensure protocol client libraries are present in the default directory
+RUN set -e && mkdir -p /usr/lib/guacamole && \
+  find /usr -type f -name 'libguac-client-*.so' -exec cp -t /usr/lib/guacamole {} + || true
+
 # Download Tomcat
 RUN rm -rf ${TOMCAT_DIR} && \
     curl -fsSL "https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" -o /tmp/tomcat.tar.gz && \
