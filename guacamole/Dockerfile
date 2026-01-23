@@ -13,6 +13,8 @@ RUN set -e && mkdir -p /tmp/export/guacamole && \
   done && \
   # Find and copy protocol client libraries wherever they are
   find /usr /opt -type f -name 'libguac-client-*.so' -exec cp -t /tmp/export/guacamole {} + && \
+  # Copy libtelnet shared libraries for telnet plugin
+  find /usr /opt -type f -name 'libtelnet*.so*' -exec cp -t /tmp/export {} + && \
   # Copy core libguac libraries
   for l in /usr/local/lib/libguac* /usr/lib/libguac* /usr/lib/aarch64-linux-gnu/libguac*; do \
     if ls $l >/dev/null 2>&1; then cp $l /tmp/export/; fi; \
@@ -36,7 +38,6 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   apk add --no-cache \
   openjdk17-jre-headless \
   libssh2 \
-  libtelnet \
   freerdp \
   libvncserver \
   cairo \
@@ -47,6 +48,7 @@ RUN ALP_VER=$(cut -d. -f1,2 /etc/alpine-release) && \
   libjpeg-turbo \
   fontconfig \
   ttf-dejavu \
+  busybox-extras \
   guacamole-server \
   mariadb mariadb-client \
   jq \
@@ -60,6 +62,7 @@ RUN set -e && \
   if [ -f /opt/guacd-export/guacd ]; then install -D /opt/guacd-export/guacd /usr/local/sbin/guacd; fi && \
   if [ -d /opt/guacd-export/guacamole ]; then mkdir -p /usr/lib/guacamole && cp -a /opt/guacd-export/guacamole/. /usr/lib/guacamole/; fi && \
   if ls /opt/guacd-export/libguac* >/dev/null 2>&1; then cp /opt/guacd-export/libguac* /usr/lib/; fi && \
+  if ls /opt/guacd-export/libtelnet* >/dev/null 2>&1; then cp /opt/guacd-export/libtelnet* /usr/lib/; fi && \
   rm -rf /opt/guacd-export
 
 # Ensure protocol client libraries are present in the default directory
