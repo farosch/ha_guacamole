@@ -1,7 +1,9 @@
 ﻿name: Apache Guacamole
-version: "1.6.0-21"
+version: "1.6.0-22"
 slug: guacamole
-description: Apache Guacamole remote desktop gateway
+description: Apache Guacamole remote desktop gateway \
+  with support for RDP, VNC, SSH and Telnet protocols.
+url: https://guacamole.apache.org/
 arch:
   - aarch64
 startup: services
